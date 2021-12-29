@@ -15,18 +15,24 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * Copyright (c) 2021 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
+ * Copyright (c) 2021 (original work) Open Assessment Technologies SA;
  */
 
 declare(strict_types=1);
 
-namespace oat\generis\model\DependencyInjection;
+namespace oat\generis\model\Context;
 
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
-
-interface ContainerServiceProviderInterface
+interface ContextInterface
 {
-    public const CONTAINER_SERVICE_ID = 'service_container';
+    /**
+     * @param mixed $default
+     *
+     * @return mixed
+     */
+    public function getParameter(string $parameter, $default = null);
 
-    public function __invoke(ContainerConfigurator $configurator): void;
+    /**
+     * @param mixed $parameterValue
+     */
+    public function setParameter(string $parameter, $parameterValue): void;
 }

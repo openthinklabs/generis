@@ -15,18 +15,20 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * Copyright (c) 2021 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
+ * Copyright (c) 2021 (original work) Open Assessment Technologies SA.
  */
 
 declare(strict_types=1);
 
-namespace oat\generis\model\DependencyInjection;
+namespace oat\generis\model\resource\Contract;
 
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use core_kernel_classes_Resource;
+use oat\generis\model\resource\exception\ResourceDeletionException;
 
-interface ContainerServiceProviderInterface
+interface ResourceDeleterInterface
 {
-    public const CONTAINER_SERVICE_ID = 'service_container';
-
-    public function __invoke(ContainerConfigurator $configurator): void;
+    /**
+     * @throws ResourceDeletionException
+     */
+    public function delete(core_kernel_classes_Resource $resource): void;
 }

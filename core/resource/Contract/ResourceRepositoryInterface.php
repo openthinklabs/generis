@@ -15,18 +15,22 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * Copyright (c) 2021 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
+ * Copyright (c) 2021 (original work) Open Assessment Technologies SA.
  */
 
 declare(strict_types=1);
 
-namespace oat\generis\model\DependencyInjection;
+namespace oat\generis\model\resource\Contract;
 
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use RuntimeException;
+use InvalidArgumentException;
+use oat\generis\model\Context\ContextInterface;
 
-interface ContainerServiceProviderInterface
+interface ResourceRepositoryInterface
 {
-    public const CONTAINER_SERVICE_ID = 'service_container';
-
-    public function __invoke(ContainerConfigurator $configurator): void;
+    /**
+     * @throws InvalidArgumentException
+     * @throws RuntimeException
+     */
+    public function delete(ContextInterface $context): void;
 }

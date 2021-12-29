@@ -15,18 +15,31 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * Copyright (c) 2021 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
+ * Copyright (c) 2021 (original work) Open Assessment Technologies SA.
  */
 
 declare(strict_types=1);
 
-namespace oat\generis\model\DependencyInjection;
+namespace oat\generis\model\resource\exception;
 
-use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
+use Exception;
+use Throwable;
+use common_exception_UserReadableException;
 
-interface ContainerServiceProviderInterface
+class ResourceDeletionException extends Exception implements common_exception_UserReadableException
 {
-    public const CONTAINER_SERVICE_ID = 'service_container';
+    /** @var string */
+    private $userMessage;
 
-    public function __invoke(ContainerConfigurator $configurator): void;
+    public function __construct(string $message, string $userMessage, int $code = 500, Throwable $throwable = null)
+    {
+        $this->userMessage = $userMessage;
+
+        parent::__construct($message, $code, $throwable);
+    }
+
+    public function getUserMessage(): string
+    {
+        return $this->userMessage;
+    }
 }
