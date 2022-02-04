@@ -53,6 +53,16 @@
   "extra": {
     "tao-extension-name": "generis"
   },
+	"repositories": [
+		{
+			"type": "vcs",
+			"url": "git@github.com:openthinklabs/oatbox-extension-installer.git"
+		},
+		{
+			"type": "vcs",
+			"url": "git@github.com:openthinklabs/lib-generis-search.git"
+		}    
+  ],
   "require": {
     "php": "^7.1",
     "clearfw/clearfw": "~1.2.0",
@@ -102,6 +112,11 @@
   "autoload-dev": {
     "psr-4": {
       "oat\\generis\\test\\": "generis/test/"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "openthinklabs/oatbox-extension-installer": true
     }
   }
 }
