@@ -73,7 +73,7 @@
     "league/flysystem": "~1.0",
     "league/flysystem-memory": "~1.0",
     "openthinklabs/oatbox-extension-installer": "1.2.2",
-    "openthinklabs/lib-generis-search": "2.1.2",
+    "openthinklabs/lib-generis-search": "2.1.2.1",
     "monolog/monolog": "^1.23.0",
     "fluent/logger": "^1.0.1",
     "symfony/lock": "^3.4",
