@@ -15,9 +15,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * Copyright (c) 2002-2008 (original work) Public Research Centre Henri Tudor & University of Luxembourg (under the project TAO & TAO2);
- *               2008-2010 (update and modification) Deutsche Institut für Internationale Pädagogische Forschung (under the project TAO-TRANSFER);
- *               2009-2012 (update and modification) Public Research Centre Henri Tudor (under the project TAO-SUSTAIN & TAO-DEV);
+ * Copyright (c) 2002-2008 (original work) Public Research Centre Henri Tudor & University of Luxembourg
+ *                         (under the project TAO & TAO2);
+ *               2008-2010 (update and modification) Deutsche Institut für Internationale Pädagogische Forschung
+ *                         (under the project TAO-TRANSFER);
+ *               2009-2012 (update and modification) Public Research Centre Henri Tudor
+ *                         (under the project TAO-SUSTAIN & TAO-DEV);
  *               2012-2017 (update and modification) Open Assessment Technologies SA (under the project TAO-PRODUCT);
  */
 
@@ -34,7 +37,8 @@ use oat\generis\model\kernel\uri\UriProvider;
  * Short description of class core_kernel_persistence_smoothsql_Class
  *
  */
-class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_smoothsql_Resource implements core_kernel_persistence_ClassInterface
+class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_smoothsql_Resource implements
+    core_kernel_persistence_ClassInterface
 {
     use EventManagerAwareTrait;
 
@@ -46,8 +50,12 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
     {
         if (!$recursive) {
             $returnValue = [];
-            $sqlQuery = 'SELECT subject FROM statements WHERE predicate = ? and ' . $this->getPersistence()->getPlatForm()->getObjectTypeCondition() . ' = ?';
-            $sqlResult = $this->getPersistence()->query($sqlQuery, [OntologyRdfs::RDFS_SUBCLASSOF, $resource->getUri()]);
+            $sqlQuery = 'SELECT subject FROM statements WHERE predicate = ? and '
+                . $this->getPersistence()->getPlatForm()->getObjectTypeCondition() . ' = ?';
+            $sqlResult = $this->getPersistence()->query(
+                $sqlQuery,
+                [OntologyRdfs::RDFS_SUBCLASSOF, $resource->getUri()]
+            );
             while ($row = $sqlResult->fetch()) {
                 $returnValue[$row['subject']] = $this->getModel()->getClass($row['subject']);
             }
@@ -71,8 +79,9 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
             foreach ($todo as $class) {
                 $classString .= ", " . $this->getPersistence()->quote($class->getUri()) ;
             }
-            $sqlQuery = 'SELECT subject FROM statements WHERE predicate = ? and ' . $this->getPersistence()->getPlatForm()->getObjectTypeCondition()
-                . ' in (' . substr($classString, 1) . ')';
+            $sqlQuery = 'SELECT subject FROM statements WHERE predicate = ? and '
+                . $this->getPersistence()->getPlatForm()->getObjectTypeCondition() . ' in ('
+                . substr($classString, 1) . ')';
             $sqlResult = $this->getPersistence()->query($sqlQuery, [OntologyRdfs::RDFS_SUBCLASSOF]);
             $todo = [];
             while ($row = $sqlResult->fetch()) {
@@ -93,19 +102,20 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
     public function isSubClassOf(core_kernel_classes_Class $resource, core_kernel_classes_Class $parentClass)
     {
         $returnValue = false;
-        
-        $query = 'SELECT object FROM statements WHERE subject = ? AND predicate = ? AND ' . $this->getPersistence()->getPlatForm()->getObjectTypeCondition() . ' = ?';
+
+        $query = 'SELECT object FROM statements WHERE subject = ? AND predicate = ? AND '
+            . $this->getPersistence()->getPlatForm()->getObjectTypeCondition() . ' = ?';
         $result = $this->getPersistence()->query($query, [
             $resource->getUri(),
             OntologyRdfs::RDFS_SUBCLASSOF,
             $parentClass->getUri()
         ]);
-        
+
         while ($row = $result->fetch()) {
             $returnValue =  true;
             break;
         }
-        
+
         if (!$returnValue) {
             $parentSubClasses = $parentClass->getSubClasses(true);
             foreach ($parentSubClasses as $subClass) {
@@ -115,7 +125,7 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
                 }
             }
         }
-        
+
         return $returnValue;
     }
 
@@ -126,18 +136,24 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
     public function getParentClasses(core_kernel_classes_Class $resource, $recursive = false)
     {
         $returnValue = [];
-        
+
         $sqlQuery = 'SELECT object FROM statements WHERE subject = ?  AND predicate = ?';
 
         $sqlResult = $this->getPersistence()->query($sqlQuery, [$resource->getUri(), OntologyRdfs::RDFS_SUBCLASSOF]);
 
         while ($row = $sqlResult->fetch()) {
             $parentClass = $this->getModel()->getClass($row['object']);
-            
+
             $returnValue[$parentClass->getUri()] = $parentClass ;
-            if ($recursive == true && $parentClass->getUri() != OntologyRdfs::RDFS_CLASS && $parentClass->getUri() != OntologyRdfs::RDFS_RESOURCE) {
+            if (
+                $recursive == true
+                && $parentClass->getUri() != OntologyRdfs::RDFS_CLASS
+                && $parentClass->getUri() != OntologyRdfs::RDFS_RESOURCE
+            ) {
                 if ($parentClass->getUri() == GenerisRdf::CLASS_GENERIS_RESOURCE) {
-                    $returnValue[OntologyRdfs::RDFS_RESOURCE] = $this->getModel()->getClass(OntologyRdfs::RDFS_RESOURCE);
+                    $returnValue[OntologyRdfs::RDFS_RESOURCE] = $this->getModel()->getClass(
+                        OntologyRdfs::RDFS_RESOURCE
+                    );
                 } else {
                     $plop = $parentClass->getParentClasses(true);
                     $returnValue = array_merge($returnValue, $plop);
@@ -155,18 +171,19 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
     public function getProperties(core_kernel_classes_Class $resource, $recursive = false)
     {
         $returnValue = [];
-        
-        $sqlQuery = 'SELECT subject FROM statements WHERE predicate = ?  AND ' . $this->getPersistence()->getPlatForm()->getObjectTypeCondition() . ' = ?';
+
+        $sqlQuery = 'SELECT subject FROM statements WHERE predicate = ?  AND '
+            . $this->getPersistence()->getPlatForm()->getObjectTypeCondition() . ' = ?';
         $sqlResult = $this->getPersistence()->query($sqlQuery, [
             OntologyRdfs::RDFS_DOMAIN,
             $resource->getUri()
         ]);
-        
+
         while ($row = $sqlResult->fetch()) {
             $property = $this->getModel()->getProperty($row['subject']);
             $returnValue[$property->getUri()] = $property;
         }
-        
+
         if ($recursive == true) {
             $parentClasses = $this->getParentClasses($resource, true);
             foreach ($parentClasses as $parent) {
@@ -175,7 +192,7 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
                 }
             }
         }
-        
+
         return $returnValue;
     }
 
@@ -186,17 +203,27 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
     public function getInstances(core_kernel_classes_Class $resource, $recursive = false, $params = [])
     {
         $returnValue = [];
-        
+
+        if (empty($params)) {
+            $resourceIds = $this->getInstanceUris($resource->getUri(), $recursive);
+
+            foreach ($resourceIds as $resourceId) {
+                $returnValue[$resourceId] = $this->getModel()->getResource($resourceId);
+            }
+
+            return $returnValue;
+        }
+
         $params = array_merge($params, ['like' => false, 'recursive' => $recursive]);
-        
+
         $query = $this->getFilteredQuery($resource, [], $params);
         $result = $this->getPersistence()->query($query);
-        
+
         while ($row = $result->fetch()) {
             $foundInstancesUri = $row['subject'];
             $returnValue[$foundInstancesUri] = $this->getModel()->getResource($foundInstancesUri);
         }
-        
+
         return $returnValue;
     }
 
@@ -261,10 +288,10 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
         if ($uri == '') {
             $subject = $this->getServiceLocator()->get(UriProvider::SERVICE_ID)->provide();
         } elseif ($uri[0] == '#') { //$uri should start with # and be well formed
-                $modelUri = common_ext_NamespaceManager::singleton()->getLocalNamespace()->getUri();
-                $subject = rtrim($modelUri, '#') . $uri;
+            $modelUri = common_ext_NamespaceManager::singleton()->getLocalNamespace()->getUri();
+            $subject = rtrim($modelUri, '#') . $uri;
         } else {
-                $subject = $uri;
+            $subject = $uri;
         }
 
         $returnValue = $this->getModel()->getResource($subject);
@@ -304,7 +331,7 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
         if (!empty($comment)) {
             $properties[OntologyRdfs::RDFS_COMMENT] = $comment;
         }
-            
+
         $returnValue->setPropertiesValues($properties);
         return $returnValue;
     }
@@ -313,8 +340,12 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
      * (non-PHPdoc)
      * @see core_kernel_persistence_ClassInterface::createProperty()
      */
-    public function createProperty(core_kernel_classes_Class $resource, $label = '', $comment = '', $isLgDependent = false)
-    {
+    public function createProperty(
+        core_kernel_classes_Class $resource,
+        $label = '',
+        $comment = '',
+        $isLgDependent = false
+    ) {
         $returnValue = null;
 
 
@@ -349,20 +380,20 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
     public function searchInstances(core_kernel_classes_Class $resource, $propertyFilters = [], $options = [])
     {
         $returnValue = [];
-        
+
         // Avoid a 'like' search on OntologyRdf::RDF_TYPE!
         if (count($propertyFilters) === 0) {
             $options = array_merge($options, ['like' => false]);
         }
-        
+
         $query = $this->getFilteredQuery($resource, $propertyFilters, $options);
         $result = $this->getPersistence()->query($query);
-        
+
         while ($row = $result->fetch()) {
             $foundInstancesUri = $row['subject'];
             $returnValue[$foundInstancesUri] = $this->getModel()->getResource($foundInstancesUri);
         }
-        
+
         return $returnValue;
     }
 
@@ -375,16 +406,17 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
         if (isset($options['offset'])) {
             unset($options['offset']);
         }
-        
+
         if (isset($options['limit'])) {
             unset($options['limit']);
         }
-        
+
         if (isset($options['order'])) {
             unset($options['order']);
         }
-        
-        $query = 'SELECT count(subject) FROM (' . $this->getFilteredQuery($resource, $propertyFilters, $options) . ') as countq';
+
+        $query = 'SELECT count(subject) FROM (' . $this->getFilteredQuery($resource, $propertyFilters, $options)
+            . ') as countq';
         return (int)$this->getPersistence()->query($query)->fetchColumn();
     }
 
@@ -392,31 +424,36 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
      * (non-PHPdoc)
      * @see core_kernel_persistence_ClassInterface::getInstancesPropertyValues()
      */
-    public function getInstancesPropertyValues(core_kernel_classes_Class $resource, core_kernel_classes_Property $property, $propertyFilters = [], $options = [])
-    {
+    public function getInstancesPropertyValues(
+        core_kernel_classes_Class $resource,
+        core_kernel_classes_Property $property,
+        $propertyFilters = [],
+        $options = []
+    ) {
         $returnValue = [];
-        
+
         $distinct = isset($options['distinct']) ? $options['distinct'] : false;
-        
+
         if (count($propertyFilters) === 0) {
             $options = array_merge($options, ['like' => false]);
         }
-        
+
         $filteredQuery = $this->getFilteredQuery($resource, $propertyFilters, $options);
-        
+
         // Get all the available property values in the subset of instances
         $query = 'SELECT';
         if ($distinct) {
             $query .= ' DISTINCT';
         }
-        
-        $query .= " object FROM (SELECT overq.subject, valuesq.object FROM (${filteredQuery}) as overq JOIN statements AS valuesq ON (overq.subject = valuesq.subject AND valuesq.predicate = ?)) AS overrootq";
-        
+
+        $query .= " object FROM (SELECT overq.subject, valuesq.object FROM (${filteredQuery}) as overq JOIN statements "
+            . "AS valuesq ON (overq.subject = valuesq.subject AND valuesq.predicate = ?)) AS overrootq";
+
         $sqlResult = $this->getPersistence()->query($query, [$property->getUri()]);
         while ($row = $sqlResult->fetch()) {
             $returnValue[] = common_Utils::toResource($row['object']);
         }
-        
+
         return (array) $returnValue;
     }
 
@@ -442,13 +479,17 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
         $returnValue = null;
 
         if (isset($properties[OntologyRdf::RDF_TYPE])) {
-            throw new core_kernel_persistence_Exception('Additional types in createInstanceWithProperties not permited');
+            throw new core_kernel_persistence_Exception(
+                'Additional types in createInstanceWithProperties not permited'
+            );
         }
-        
+
         $properties[OntologyRdf::RDF_TYPE] = $type;
-        $returnValue = $this->getModel()->getResource($this->getServiceLocator()->get(UriProvider::SERVICE_ID)->provide());
+        $returnValue = $this->getModel()->getResource(
+            $this->getServiceLocator()->get(UriProvider::SERVICE_ID)->provide()
+        );
         $returnValue->setPropertiesValues($properties);
-        
+
         return $returnValue;
     }
 
@@ -462,28 +503,30 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
 
         $class = $this->getModel()->getClass($resource->getUri());
         $uris = [];
-        
+
         foreach ($resources as $r) {
             $uri = (($r instanceof core_kernel_classes_Resource) ? $r->getUri() : $r);
             $uris[] = $this->getPersistence()->quote($uri);
         }
-        
+
         if ($class->exists()) {
             $inValues = implode(',', $uris);
             $query = 'DELETE FROM statements WHERE subject IN (' . $inValues . ')';
-            
+
             if (true === $deleteReference) {
                 $params[] = $resource->getUri();
                 $query .= ' OR object IN (' . $inValues . ')';
             }
-            
+
             try {
                 // Even if now rows are affected, we consider the resources
                 // as deleted.
                 $this->getPersistence()->exec($query);
                 $returnValue = true;
             } catch (DBALException $e) {
-                throw new core_kernel_persistence_smoothsql_Exception("An error occured while deleting resources: " . $e->getMessage());
+                throw new core_kernel_persistence_smoothsql_Exception(
+                    "An error occured while deleting resources: " . $e->getMessage()
+                );
             }
         }
 
@@ -500,14 +543,14 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
     public function getFilteredQuery(core_kernel_classes_Class $resource, $propertyFilters = [], $options = [])
     {
         $rdftypes = [];
-        
+
         // Check recursivity...
         if (isset($options['recursive']) && $options['recursive']) {
             foreach ($this->getSubClasses($resource, $options['recursive']) as $subClass) {
                 $rdftypes[] = $subClass->getUri();
             }
         }
-    
+
         // Check additional classes...
         if (isset($options['additionalClasses'])) {
             foreach ($options['additionalClasses'] as $aC) {
@@ -515,27 +558,129 @@ class core_kernel_persistence_smoothsql_Class extends core_kernel_persistence_sm
                 $rdftypes = array_unique($rdftypes);
             }
         }
-        
+
         // Add the class type of the given class
         if (!in_array($resource->getUri(), $rdftypes)) {
             $rdftypes[] = $resource->getUri();
         }
 
-        $and = (isset($options['chaining']) === false) ? true : ((strtolower($options['chaining']) === 'and') ? true : false);
+        $and = (isset($options['chaining']) === false)
+            ? true
+            : ((strtolower($options['chaining']) === 'and') ? true : false);
         $like = (isset($options['like']) === false) ? true : $options['like'];
         $lang = (isset($options['lang']) === false) ? '' : $options['lang'];
         $offset = (isset($options['offset']) === false) ? 0 : $options['offset'];
         $limit = (isset($options['limit']) === false) ? 0 : $options['limit'];
         $order = (isset($options['order']) === false) ? '' : $options['order'];
         $orderdir = (isset($options['orderdir']) === false) ? 'ASC' : $options['orderdir'];
+        $onlyClass = (isset($options['onlyClass']) === false) ? false : $options['onlyClass'];
 
         if ($this->getServiceLocator()->has(ComplexSearchService::SERVICE_ID)) {
             $search = $this->getModel()->getSearchInterface();
-            $query = $search->getQuery($this->getModel(), $rdftypes, $propertyFilters, $and, $like, $lang, $offset, $limit, $order, $orderdir);
+            $query = $search->getQuery(
+                $this->getModel(),
+                $rdftypes,
+                $propertyFilters,
+                $and,
+                $like,
+                $lang,
+                $offset,
+                $limit,
+                $order,
+                $orderdir,
+                $onlyClass
+            );
         } else {
-            $query = core_kernel_persistence_smoothsql_Utils::buildFilterQuery($this->getModel(), $rdftypes, $propertyFilters, $and, $like, $lang, $offset, $limit, $order, $orderdir);
+            $query = core_kernel_persistence_smoothsql_Utils::buildFilterQuery(
+                $this->getModel(),
+                $rdftypes,
+                $propertyFilters,
+                $and,
+                $like,
+                $lang,
+                $offset,
+                $limit,
+                $order,
+                $orderdir
+            );
         }
 
         return $query;
+    }
+
+    public function updateUri(core_kernel_classes_Class $resource, string $newUri): void
+    {
+        $query = $this->getPersistence()->getPlatForm()->getQueryBuilder();
+
+        $expressionBuilder = $query->expr();
+
+        $query
+            ->update('statements')
+            ->set('subject', ':uri')
+            ->where($expressionBuilder->eq('subject', ':original_uri'));
+
+        $this->getPersistence()->exec(
+            $query,
+            [
+                'uri' => $newUri,
+                'original_uri' => $resource->getUri(),
+            ]
+        );
+
+        $query
+            ->update('statements')
+            ->set('object', ':uri')
+            ->where($expressionBuilder->eq('object', ':original_uri'));
+
+        $this->getPersistence()->exec(
+            $query,
+            [
+                'uri' => $newUri,
+                'original_uri' => $resource->getUri(),
+            ]
+        );
+    }
+
+    public function getInstanceUris(string $classUri, bool $recursive = false): array
+    {
+        if (!$recursive) {
+            $query = 'SELECT subject FROM statements WHERE predicate = ? AND object = ?';
+            $params = [
+                OntologyRdf::RDF_TYPE,
+                $classUri,
+            ];
+        } else {
+            $query = <<<'SQL'
+WITH RECURSIVE statements_tree AS (
+    SELECT
+        r.subject,
+        r.predicate
+    FROM statements r
+    WHERE r.subject = ?
+      AND r.predicate IN (?, ?)
+    UNION ALL
+    SELECT
+        s.subject,
+        s.predicate
+    FROM statements s
+        JOIN statements_tree st
+            ON s.object = st.subject
+    WHERE s.predicate IN (?, ?)
+)
+SELECT subject FROM statements_tree WHERE predicate = ?;
+SQL;
+            $params = [
+                $classUri,
+                OntologyRdfs::RDFS_SUBCLASSOF,
+                OntologyRdf::RDF_TYPE,
+                OntologyRdfs::RDFS_SUBCLASSOF,
+                OntologyRdf::RDF_TYPE,
+                OntologyRdf::RDF_TYPE,
+            ];
+        }
+
+        $statement = $this->getPersistence()->query($query, $params);
+
+        return array_column($statement->fetchAll(), 'subject');
     }
 }

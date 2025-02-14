@@ -21,12 +21,12 @@
 
 namespace oat\oatbox\cache;
 
-use oat\oatbox\service\ConfigurableService;
-use common_persistence_KeyValuePersistence;
-use oat\generis\persistence\PersistenceManager;
 use common_exception_NotImplemented;
+use common_persistence_KeyValuePersistence;
 use DateInterval;
 use DateTimeImmutable;
+use oat\generis\persistence\PersistenceManager;
+use oat\oatbox\service\ConfigurableService;
 
 /**
  * Caches data in a key-value store
@@ -39,7 +39,7 @@ class KeyValueCache extends ConfigurableService implements SimpleCache
 {
     use MultipleCacheTrait;
 
-    const OPTION_PERSISTENCE = 'persistence';
+    public const OPTION_PERSISTENCE = 'persistence';
 
     /** @var common_persistence_KeyValuePersistence */
     private $persistence;
@@ -82,7 +82,7 @@ class KeyValueCache extends ConfigurableService implements SimpleCache
 
     protected function dateIntervalToSeconds(DateInterval $dateInterval): int
     {
-        $reference = new DateTimeImmutable;
+        $reference = new DateTimeImmutable();
         $endTime = $reference->add($dateInterval);
         return $endTime->getTimestamp() - $reference->getTimestamp();
     }
@@ -93,7 +93,10 @@ class KeyValueCache extends ConfigurableService implements SimpleCache
     protected function getPersistence()
     {
         if (is_null($this->persistence)) {
-            $this->persistence = $this->getServiceLocator()->get(PersistenceManager::SERVICE_ID)->getPersistenceById($this->getOption(self::OPTION_PERSISTENCE));
+            $this->persistence = $this
+                ->getServiceLocator()
+                ->get(PersistenceManager::SERVICE_ID)
+                ->getPersistenceById($this->getOption(self::OPTION_PERSISTENCE));
         }
         return $this->persistence;
     }

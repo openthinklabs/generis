@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -14,20 +15,22 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * Copyright (c) 2013-2017 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
+ * Copyright (c) 2013-2023 (original work) Open Assessment Technologies SA (under the project TAO-PRODUCT);
  *
  * @author Lionel Lecaque  <lionel@taotesting.com>
  * @license GPLv2
  * @package
- *
+ * phpcs:disable Squiz.Classes.ValidClassName
  */
+
 class common_persistence_PhpRedisDriver implements common_persistence_AdvKvDriver, common_persistence_KeyValue_Nx
 {
+    public const DEFAULT_PORT = 6379;
+    public const DEFAULT_ATTEMPT = 3;
+    public const DEFAULT_TIMEOUT = 5; // in seconds
+    public const RETRY_DELAY = 500000; // Eq to 0.5s
 
-    const DEFAULT_PORT     = 6379;
-    const DEFAULT_ATTEMPT  = 3;
-    const DEFAULT_TIMEOUT  = 5; // in seconds
-    const RETRY_DELAY      = 500000; // Eq to 0.5s
+    private const DEFAULT_PREFIX_SEPARATOR = ':';
 
     /**
      * @var Redis
@@ -43,7 +46,7 @@ class common_persistence_PhpRedisDriver implements common_persistence_AdvKvDrive
      * store connection params and try to connect
      * @see common_persistence_Driver::connect()
      */
-    function connect($key, array $params)
+    public function connect($key, array $params)
     {
         $this->params = $params;
         $this->connectionSet($params);
@@ -56,13 +59,13 @@ class common_persistence_PhpRedisDriver implements common_persistence_AdvKvDrive
      * @param array $params
      * @throws common_exception_Error
      */
-    function connectionSet(array $params)
+    public function connectionSet(array $params)
     {
         if (!isset($params['host'])) {
             throw new common_exception_Error('Missing host information for Redis driver');
         }
 
-        $port    = isset($params['port']) ? $params['port'] : self::DEFAULT_PORT;
+        $port = isset($params['port']) ? $params['port'] : self::DEFAULT_PORT;
         $timeout = isset($params['timeout']) ? $params['timeout'] : self::DEFAULT_TIMEOUT;
         $persist = isset($params['pconnect']) ? $params['pconnect'] : true;
         $this->params['attempt'] = isset($params['attempt']) ? $params['attempt'] : self::DEFAULT_ATTEMPT;
@@ -85,10 +88,23 @@ class common_persistence_PhpRedisDriver implements common_persistence_AdvKvDrive
         } else {
             $this->connection->connect($host, $port, $timeout);
         }
+        if (isset($this->params['database_index'])) {
+            if (!$this->connection->select($this->params['database_index'])) {
+                $this->connection->close();
+                throw new common_exception_Error(
+                    "Failed to select Redis database"
+                );
+            }
+        }
     }
 
     private function connectToCluster(array $host, int $timeout, bool $persist)
     {
+        if (isset($this->params['database_index'])) {
+            throw new common_exception_Error(
+                "Redis Cluster can only support a single database, 'database_index' parameter is invalid."
+            );
+        }
         $this->connection = new RedisCluster(null, $host, $timeout, null, $persist);
     }
 
@@ -103,26 +119,20 @@ class common_persistence_PhpRedisDriver implements common_persistence_AdvKvDrive
     protected function callWithRetry($method, array $params, $attempt = 1)
     {
 
-        $success       = false;
+        $success = false;
         $lastException = null;
-        $result        = false;
+        $result = false;
 
-        $retry = $this->params['attempt'];
+        $retry = (int)$this->params['attempt'];
 
         while (!$success && $attempt <= $retry) {
             try {
-                $result = call_user_func_array([$this->connection , $method], $params);
+                $result = call_user_func_array([$this->connection, $method], $params);
                 $success = true;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $lastException = $e;
-                \common_Logger::d('Redis  ' . $method . ' failed ' . $attempt . '/' . $retry . ' :  ' . $e->getMessage());
-                if ($e->getMessage() == 'Failed to AUTH connection' && isset($this->params['password'])) {
-                    \common_Logger::d('Authenticating Redis connection');
-                    $this->connection->auth($this->params['password']);
-                }
-                $delay = rand(self::RETRY_DELAY, self::RETRY_DELAY * 2);
-                usleep($delay);
-                $this->connectionSet($this->params);
+
+                $this->reconnectOnException($lastException, $method, $attempt, $retry);
             }
             $attempt++;
         }
@@ -130,6 +140,7 @@ class common_persistence_PhpRedisDriver implements common_persistence_AdvKvDrive
         if (!$success) {
             throw $lastException;
         }
+
         return $result;
     }
 
@@ -142,75 +153,129 @@ class common_persistence_PhpRedisDriver implements common_persistence_AdvKvDrive
         $options = [];
         if (!is_null($ttl)) {
             $options['ex'] = $ttl;
-        };
+        }
         if ($nx) {
             $options[] = 'nx';
-        };
-        return $this->callWithRetry('set', [$key, $value, $options]);
+        }
+        return $this->callWithRetry('set', [$this->prefixKey($key), $value, $options]);
     }
-    
+
     public function get($key)
     {
-
-        return $this->callWithRetry('get', [$key]);
+        return $this->callWithRetry('get', [$this->prefixKey($key)]);
     }
-    
+
     public function exists($key)
     {
-        return (bool)$this->callWithRetry('exists', [$key]);
+        return (bool)$this->callWithRetry('exists', [$this->prefixKey($key)]);
     }
-    
+
     public function del($key)
     {
-        return $this->callWithRetry('del', [$key]);
+        return $this->callWithRetry('del', [$this->prefixKey($key)]);
     }
 
     //O(N) where N is the number of fields being set.
     public function hmSet($key, $fields)
     {
-        return $this->callWithRetry('hmSet', [$key, $fields]);
+        return $this->callWithRetry('hmSet', [$this->prefixKey($key), $fields]);
     }
+
     //Time complexity: O(1)
     public function hExists($key, $field)
     {
-        return (bool)$this->callWithRetry('hExists', [$key, $field]);
+        return (bool)$this->callWithRetry('hExists', [$this->prefixKey($key), $field]);
     }
 
     //Time complexity: O(1)
     public function hSet($key, $field, $value)
     {
-        return $this->callWithRetry('hSet', [$key, $field, $value]);
+        return $this->callWithRetry('hSet', [$this->prefixKey($key), $field, $value]);
     }
+
     //Time complexity: O(1)
     public function hGet($key, $field)
     {
-        return $this->callWithRetry('hGet', [$key, $field]);
+        return $this->callWithRetry('hGet', [$this->prefixKey($key), $field]);
     }
 
     public function hDel($key, $field): bool
     {
-        return (bool) $this->callWithRetry('hDel', [$key, $field]);
+        return (bool)$this->callWithRetry('hDel', [$this->prefixKey($key), $field]);
     }
 
     //Time complexity: O(N) where N is the size of the hash.
     public function hGetAll($key)
     {
-        return $this->callWithRetry('hGetAll', [$key]);
+        return $this->callWithRetry('hGetAll', [$this->prefixKey($key)]);
     }
+
     //Time complexity: O(N)
     public function keys($pattern)
     {
-        return $this->callWithRetry('keys', [$pattern]);
+        return $this->callWithRetry('keys', [$this->prefixKey($pattern)]);
     }
+
     //Time complexity: O(1)
     public function incr($key)
     {
-        return $this->callWithRetry('incr', [$key]);
+        return $this->callWithRetry('incr', [$this->prefixKey($key)]);
     }
+
     //Time complexity: O(1)
     public function decr($key)
     {
-        return $this->callWithRetry('decr', [$key]);
+        return $this->callWithRetry('decr', [$this->prefixKey($key)]);
+    }
+
+    /**
+     * @throws RedisException
+     * @throws common_exception_Error
+     */
+    public function scan(int &$iterator = null, string $pattern = null, int $count = 1000): array
+    {
+        $retry = (int)$this->params['attempt'];
+        $attempt = 0;
+
+        while ($attempt <= $retry) {
+            try {
+                return $this->connection->scan($iterator, $this->prefixKey($pattern), $count);
+            } catch (Exception $exception) {
+                $this->reconnectOnException($exception, 'scan', $attempt, $retry);
+            }
+
+            $attempt++;
+        }
+
+        if (isset($exception)) {
+            throw $exception;
+        }
+
+        return [];
+    }
+
+    /**
+     * @return array|bool
+     */
+    public function mGet(array $keys)
+    {
+        return $this->callWithRetry('mGet', [$this->prefixKeys($keys)]);
+    }
+
+    /**
+     * @return bool|mixed
+     */
+    public function mDel(array $keys)
+    {
+        return $this->callWithRetry('del', [$this->prefixKeys($keys)]);
+    }
+
+    /**
+     * @return bool|mixed
+     */
+    public function mSet(array $keyValues)
+    {
+        return $this->callWithRetry('mSet', [$this->prefixKeys($keyValues, true)]);
     }
 
     /**
@@ -219,5 +284,79 @@ class common_persistence_PhpRedisDriver implements common_persistence_AdvKvDrive
     public function getConnection()
     {
         return $this->connection;
+    }
+
+    protected function getPrefix(array $params): ?string
+    {
+        $prefix = null;
+
+        if (!empty($this->params['prefix'])) {
+            $prefix = $this->params['prefix'];
+        }
+
+        return $prefix;
+    }
+
+    /**
+     * @param string|int|null $key
+     * @return string|int|null
+     */
+    private function prefixKey($key)
+    {
+        $prefix = $this->getPrefix($this->params);
+
+        if ($prefix === null) {
+            return $key;
+        }
+
+        return $prefix . ($this->params['prefixSeparator'] ?? self::DEFAULT_PREFIX_SEPARATOR) . $key;
+    }
+
+    private function prefixKeys(array $keys, bool $keyValueMode = false): array
+    {
+        if ($this->getPrefix($this->params) !== null) {
+            $prefixedKeys = [];
+            foreach (array_values($keys) as $i => $element) {
+                if ($keyValueMode) {
+                    $prefixedKeys[] = $i % 2 == 0 ? $this->prefixKey($element) : $element;
+                } else {
+                    $prefixedKeys[] = $this->prefixKey($element);
+                }
+            }
+
+            return $prefixedKeys;
+        }
+
+        return $keys;
+    }
+
+    /**
+     * @return void
+     * @throws RedisException
+     * @throws common_exception_Error
+     */
+    private function reconnectOnException(Exception $exception, string $method, int $attempt, int $retry): void
+    {
+        common_Logger::d(
+            sprintf(
+                'Redis %s failed %s/%s:  %s',
+                $method,
+                $attempt,
+                $retry,
+                $exception->getMessage(),
+            )
+        );
+
+        if ($exception->getMessage() == 'Failed to AUTH connection' && isset($this->params['password'])) {
+            common_Logger::d('Authenticating Redis connection');
+
+            $this->connection->auth($this->params['password']);
+        }
+
+        $delay = rand(self::RETRY_DELAY, self::RETRY_DELAY * 2);
+
+        usleep($delay);
+
+        $this->connectionSet($this->params);
     }
 }

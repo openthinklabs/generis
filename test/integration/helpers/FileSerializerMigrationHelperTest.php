@@ -22,6 +22,7 @@ namespace oat\generis\test\integration\helpers;
 
 use common_Config;
 use core_kernel_persistence_smoothsql_SmoothModel;
+use oat\generis\model\data\Ontology;
 use oat\generis\scripts\tools\FileSerializerMigration\MigrationHelper;
 use oat\generis\model\fileReference\ResourceFileSerializer;
 use oat\generis\model\fileReference\UrlFileSerializer;
@@ -41,9 +42,9 @@ class FileSerializerMigrationHelperTest extends GenerisTestCase
 {
     use FileSystemMockTrait;
 
-    const PARENT_RESOURCE_URI = 'http://www.tao.lu/Ontologies/generis.rdf#UnitTest';
-    const PROPERTY_URI = 'http://www.tao.lu/Ontologies/generis.rdf#TestFile';
-    const SAMPLE_FILE = 'fileMigrationUnitTest.txt';
+    public const PARENT_RESOURCE_URI = 'http://www.tao.lu/Ontologies/generis.rdf#UnitTest';
+    public const PROPERTY_URI = 'http://www.tao.lu/Ontologies/generis.rdf#TestFile';
+    public const SAMPLE_FILE = 'fileMigrationUnitTest.txt';
 
     /**
      * @var MigrationHelper
@@ -100,12 +101,16 @@ class FileSerializerMigrationHelperTest extends GenerisTestCase
         $this->resourceFileSerializer = new ResourceFileSerializer();
         $this->urlFileSerializer = new UrlFileSerializer();
 
-        $serviceLocator = $this->getServiceLocatorMock([FileSystemService::SERVICE_ID => $this->getMockFileSystem()]);
+        $this->ontologyMock = $this->getOntologyMock();
+
+        $serviceLocator = $this->getServiceLocatorMock([
+            FileSystemService::SERVICE_ID => $this->getMockFileSystem(),
+            Ontology::SERVICE_ID => $this->ontologyMock,
+        ]);
         $this->fileMigrationHelper->setServiceLocator($serviceLocator);
         $this->resourceFileSerializer->setServiceLocator($serviceLocator);
         $this->urlFileSerializer->setServiceLocator($serviceLocator);
-
-        $this->ontologyMock = $this->getOntologyMock();
+        $this->fileSystemService->setServiceLocator($serviceLocator);
     }
 
     /**
@@ -156,7 +161,9 @@ class FileSerializerMigrationHelperTest extends GenerisTestCase
             [
                 GenerisRdf::PROPERTY_FILE_FILENAME => $filename,
                 GenerisRdf::PROPERTY_FILE_FILEPATH => $filePath,
-                GenerisRdf::PROPERTY_FILE_FILESYSTEM => $this->ontologyMock->getResource($this->testFile->getFileSystemId()),
+                GenerisRdf::PROPERTY_FILE_FILESYSTEM => $this->ontologyMock->getResource(
+                    $this->testFile->getFileSystemId()
+                ),
             ]
         );
 
@@ -193,7 +200,9 @@ class FileSerializerMigrationHelperTest extends GenerisTestCase
     private function getMockFileSystem()
     {
         if ($this->fileSystemService === null) {
-            $this->fileSystemService = $this->getServiceLocatorMock([FileSystemService::SERVICE_ID => new FileSystemService()])->get(FileSystemService::SERVICE_ID);
+            $this->fileSystemService = $this
+                ->getServiceLocatorMock([FileSystemService::SERVICE_ID => new FileSystemService()])
+                ->get(FileSystemService::SERVICE_ID);
         }
 
         return $this->fileSystemService;

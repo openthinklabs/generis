@@ -54,16 +54,16 @@
     "tao-extension-name": "generis"
   },
   "require": {
-    "php": "^7.1",
     "clearfw/clearfw": "~1.2.0",
     "easyrdf/easyrdf": "^1.1",
-    "doctrine/dbal": "2.10.1",
-    "doctrine/annotations": "~1.6.0",
+    "doctrine/dbal": "^2.12",
+    "doctrine/annotations": "^1.13",
     "laminas/laminas-servicemanager": "~2.5.0",
-    "league/flysystem": "~1.0",
-    "league/flysystem-memory": "~1.0",
+    "league/flysystem": "^3.0",
+    "league/flysystem-memory": "^3.0",
+    "league/flysystem-google-cloud-storage": "^3.0",
     "oat-sa/oatbox-extension-installer": "~1.1||dev-master",
-    "oat-sa/lib-generis-search": "2.1.2",
+    "oat-sa/lib-generis-search": "^2.3.0",
     "monolog/monolog": "^1.23.0",
     "fluent/logger": "^1.0.1",
     "symfony/lock": "^3.4",
@@ -71,21 +71,23 @@
     "symfony/dependency-injection": "5.3.*",
     "symfony/config":"5.3.*",
     "psr/log": "~1.0",
-    "psr/cache": "~1.0",
+    "psr/cache": "^1.0 || ^2.0",
     "psr/container": "^1.1.1",
     "psr/simple-cache" : "^1.0.1",
     "ramsey/uuid": "^3.8",
     "relay/relay": "~2.0",
     "composer-runtime-api": "^2.0",
-    "ext-pdo": "*"
+    "ext-pdo": "*",
+    "laudis/neo4j-php-client": "~2.0",
+    "wikibase-solutions/php-cypher-dsl": "^5.0"
   },
   "require-dev": {
-    "mikey179/vfsstream": "1.4.0",
-    "phpunit/phpunit": "^8.5",
+    "mikey179/vfsstream": "~1",
+    "phpunit/phpunit": "^8.5 || ^9.6",
     "php-mock/php-mock": "^2.0"
   },
   "suggest": {
-    "superbalist/flysystem-google-storage": "Supports google flystore"
+    "league/flysystem-google-cloud-storage": "Supports google flystore"
   },
   "autoload": {
     "psr-4": {
@@ -105,6 +107,12 @@
   "autoload-dev": {
     "psr-4": {
       "oat\\generis\\test\\": "generis/test/"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "oat-sa/oatbox-extension-installer": true,
+      "php-http/discovery": true
     }
   }
 }

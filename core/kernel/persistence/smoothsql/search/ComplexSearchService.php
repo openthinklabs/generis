@@ -26,15 +26,15 @@
 namespace   oat\generis\model\kernel\persistence\smoothsql\search;
 
 use core_kernel_persistence_smoothsql_SmoothModel;
+use oat\generis\model\data\Model;
 use oat\generis\model\kernel\persistence\smoothsql\search\filter\FilterFactory;
+use oat\generis\model\OntologyAwareTrait;
 use oat\oatbox\service\ConfigurableService;
 use oat\search\base\QueryBuilderInterface;
 use oat\search\base\QueryInterface;
 use oat\search\base\SearchGateWayInterface;
 use Zend\ServiceManager\Config;
 use Zend\ServiceManager\ServiceManager;
-use oat\generis\model\data\ModelManager;
-use oat\generis\model\data\Model;
 
 /**
  * Complexe search service
@@ -43,10 +43,11 @@ use oat\generis\model\data\Model;
  */
 class ComplexSearchService extends ConfigurableService
 {
-    
-    const SERVICE_ID = 'generis/complexSearch';
-    
-    const SERVICE_SEARCH_ID = 'search.tao.gateway';
+    use OntologyAwareTrait;
+
+    public const SERVICE_ID = 'generis/complexSearch';
+
+    public const SERVICE_SEARCH_ID = 'search.tao.gateway';
 
     /**
      * internal service locator
@@ -72,7 +73,10 @@ class ComplexSearchService extends ConfigurableService
     {
         if (is_null($this->services)) {
             $options = $this->getOptions();
-            $options['services']['search.options']['model'] = $this->model;
+            $model = $this->model ?? $this->getModel();
+            $ontologyOptions = $model->getOptions();
+            $options['services']['search.options']['model'] = $model;
+            $options['services']['search.options']['persistence'] = $ontologyOptions['persistence'] ?? null;
             $config         = new Config($options);
             $this->services =  new ServiceManager($config);
         }
@@ -87,11 +91,11 @@ class ComplexSearchService extends ConfigurableService
     protected function getOperator($like)
     {
         $operator = 'equals';
-        
+
         if ($like) {
             $operator = 'contains';
         }
-        
+
         return $operator;
     }
 
@@ -147,14 +151,14 @@ class ComplexSearchService extends ConfigurableService
         }
 
         $rdftypes[] = $class_uri;
-        
+
         $criteria = $query->newQuery()
                 ->add('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
                 ->in($rdftypes);
-        
+
         return $criteria;
     }
-    
+
     /**
      * set gateway language options
      * @param QueryBuilderInterface $query
@@ -172,12 +176,12 @@ class ComplexSearchService extends ConfigurableService
             $options['language'] = $userLanguage;
         }
         $options['defaultLanguage'] = $defaultLanguage;
-        
+
         $this->getGateway()->setOptions($options);
-        
+
         return $query->newQuery();
     }
-    
+
     protected function parseValue($rawValue)
     {
         $result = [];
@@ -193,7 +197,7 @@ class ComplexSearchService extends ConfigurableService
         }
         return count($result) === 1 ? $result[0] : $result;
     }
-    
+
     /**
      * verify if value is valid
      * @param string $value
@@ -224,20 +228,37 @@ class ComplexSearchService extends ConfigurableService
      * @param string $orderDir
      * @return string
      */
-    public function getQuery(core_kernel_persistence_smoothsql_SmoothModel $model, $classUri, array $propertyFilters, $and = true, $isLikeOperator = true, $lang = '', $offset = 0, $limit = 0, $order = '', $orderDir = 'ASC')
-    {
+    public function getQuery(
+        core_kernel_persistence_smoothsql_SmoothModel $model,
+        $classUri,
+        array $propertyFilters,
+        $and = true,
+        $isLikeOperator = true,
+        $lang = '',
+        $offset = 0,
+        $limit = 0,
+        $order = '',
+        $orderDir = 'ASC',
+        $onlyClass = false
+    ) {
         $query = $this->getGateway()->query()->setLimit($limit)->setOffset($offset);
-        
+
         if (!empty($order)) {
             $query->sort([$order => strtolower($orderDir)]);
         }
-        
+
         $this->setLanguage($query, $lang);
 
-        $criteria = $query->newQuery()
+        if ($onlyClass === true) {
+            $criteria = $query->newQuery()
+                ->add('http://www.w3.org/2000/01/rdf-schema#subClassOf')
+                ->in($classUri);
+        } else {
+            $criteria = $query->newQuery()
                 ->add('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
                 ->in($classUri);
-        
+        }
+
         $query->setCriteria($criteria);
         $count     = 0;
         $propertyFilters = FilterFactory::buildFilters($propertyFilters, $isLikeOperator);

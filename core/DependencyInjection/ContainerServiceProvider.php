@@ -28,6 +28,7 @@ use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\ServerRequest;
 use oat\generis\model\Middleware\MiddlewareExtensionsMapper;
 use oat\generis\model\Middleware\MiddlewareRequestHandler;
+use oat\oatbox\service\ServiceManager;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Relay\RelayBuilder;
@@ -36,6 +37,9 @@ use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigura
 use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 use function Symfony\Component\DependencyInjection\Loader\Configurator\service;
 
+/**
+ * @codeCoverageIgnore
+ */
 class ContainerServiceProvider implements ContainerServiceProviderInterface
 {
     public function __invoke(ContainerConfigurator $configurator): void
@@ -45,6 +49,11 @@ class ContainerServiceProvider implements ContainerServiceProviderInterface
         $services->set(ServerRequestInterface::class, ServerRequestInterface::class)
             ->public()
             ->factory(ServerRequest::class . '::fromGlobals');
+
+        $services
+            ->set(ServiceManager::class, ServiceManager::class)
+            ->public()
+            ->factory(ServiceManager::class . '::getServiceManager');
 
         $services->set(ResponseInterface::class, Response::class)
             ->public();

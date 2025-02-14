@@ -21,8 +21,10 @@
 
 namespace oat\oatbox\event;
 
+use common_Logger;
 use oat\oatbox\service\ConfigurableService;
 use oat\oatbox\service\ServiceNotFoundException;
+use Throwable;
 
 /**
  * The simple placeholder ServiceManager
@@ -30,15 +32,15 @@ use oat\oatbox\service\ServiceNotFoundException;
  */
 class EventManager extends ConfigurableService
 {
-    const SERVICE_ID = 'generis/event';
+    public const SERVICE_ID = 'generis/event';
 
     /**
      * @deprecated use SERVICE_ID
      */
-    const CONFIG_ID = 'generis/event';
-    
-    const OPTION_LISTENERS = 'listeners';
-    
+    public const CONFIG_ID = 'generis/event';
+
+    public const OPTION_LISTENERS = 'listeners';
+
     /**
      * Dispatch an event and trigger its listeners
      *
@@ -52,9 +54,18 @@ class EventManager extends ConfigurableService
         $event = is_object($event) ? $event : new GenericEvent($event, $params);
 
         foreach ($this->getListeners($event) as $callback) {
+            $callbackName = $callback;
+
             if (is_array($callback) && count($callback) == 2) {
-                list($key, $function) = $callback;
+                [$key, $function] = $callback;
+
+                if (is_object($key)) {
+                    $callbackName = sprintf('%s::%s', get_class($key), $function);
+                }
+
                 if (is_string($key)) {
+                    $callbackName = sprintf('%s::%s', $key, $function);
+
                     try {
                         $service = $container->get($key);
                         $callback = [$service, $function];
@@ -64,10 +75,22 @@ class EventManager extends ConfigurableService
                 }
             }
 
+            if (!is_callable($callback)) {
+                common_Logger::w(
+                    sprintf(
+                        'Event manager cannot call %s because it is not a callable. '
+                        . 'Notice, that classes registered in DI container cannot be executed during the installation',
+                        $callbackName
+                    )
+                );
+
+                continue;
+            }
+
             call_user_func($callback, $event);
         }
     }
-    
+
     /**
      * Attach a Listener to one or multiple events
      *
@@ -90,7 +113,7 @@ class EventManager extends ConfigurableService
         }
         $this->setOption(self::OPTION_LISTENERS, $listeners);
     }
-    
+
     /**
      * remove listener from an event and delete event if it dosn't have any listeners
      * @param array $listeners
@@ -130,7 +153,7 @@ class EventManager extends ConfigurableService
         }
         $this->setOption(self::OPTION_LISTENERS, $listeners);
     }
-    
+
     /**
      * Get all Listeners listening to this kind of event
      *

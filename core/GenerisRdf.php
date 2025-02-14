@@ -17,6 +17,7 @@
  *
  * Copyright (c) 2017 (original work) Open Assessment Technologies SA;
  *
+ * phpcs:disable Generic.Files.LineLength
  */
 
 namespace oat\generis\model;
@@ -83,4 +84,7 @@ interface GenerisRdf
     public const PROPERTY_USER_ROLES = 'http://www.tao.lu/Ontologies/generis.rdf#userRoles';
     /** @deprecated use UserRdf::PROPERTY_TIMEZONE */
     public const PROPERTY_USER_TIMEZONE = 'http://www.tao.lu/Ontologies/generis.rdf#userTimezone';
+    public const PROPERTY_USER_INTERFACE_MODE = 'http://www.tao.lu/Ontologies/generis.rdf#InterfaceMode';
+    public const PROPERTY_USER_INTERFACE_MODE_ADVANCED = 'http://www.tao.lu/Ontologies/generis.rdf#InterfaceModeAdvanced';
+    public const PROPERTY_USER_INTERFACE_MODE_SIMPLE = 'http://www.tao.lu/Ontologies/generis.rdf#InterfaceModeSimple';
 }

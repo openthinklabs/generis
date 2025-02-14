@@ -34,8 +34,8 @@ class RdfImportTest extends GenerisTestCase
     public function testRdfTripleImport(Ontology $ontology)
     {
         $this->assertEquals(0, $this->getTripleCount($ontology));
-        $triple1 = core_kernel_classes_Triple::createTriple(0, 'subject', 'predicate', 'object');
-        $triple2 = core_kernel_classes_Triple::createTriple(0, 'subject', 'predicate', 'object2');
+        $triple1 = core_kernel_classes_Triple::createTriple(2, 'subject', 'predicate', 'object');
+        $triple2 = core_kernel_classes_Triple::createTriple(2, 'subject', 'predicate', 'object2');
         $importer = new RdfImporter();
         $importer->setServiceLocator($ontology->getServiceLocator());
         $importer->importTriples([$triple1, $triple2]);
@@ -50,7 +50,7 @@ class RdfImportTest extends GenerisTestCase
         $this->assertEquals(0, $this->getTripleCount($ontology));
         $importer = new RdfImporter();
         $importer->setServiceLocator($ontology->getServiceLocator());
-        $importer->importFile(__DIR__.'/../../../../samples/rdf/generis.rdf');
+        $importer->importFile(__DIR__ . '/../../../../samples/rdf/generis.rdf');
         $this->assertEquals(3, $this->getTripleCount($ontology));
     }
 

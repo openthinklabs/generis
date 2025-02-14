@@ -31,6 +31,7 @@ use Doctrine\DBAL\Driver\Statement;
 use oat\oatbox\service\ServiceManager;
 use oat\search\base\exception\SearchGateWayExeption;
 use oat\search\base\QueryBuilderInterface;
+use oat\search\base\ResultSetInterface;
 use oat\search\TaoSearchGateWay;
 
 /**
@@ -40,7 +41,6 @@ use oat\search\TaoSearchGateWay;
  */
 class GateWay extends TaoSearchGateWay
 {
-    
     /**
      *
      * @var common_persistence_SqlPersistence
@@ -60,18 +60,22 @@ class GateWay extends TaoSearchGateWay
     protected $driverList = [
         'taoRdf' => 'search.driver.tao'
     ];
-    
+
     /**
      * resultSet service or className
      * @var string
      */
     protected $resultSetClassName = '\\oat\\generis\\model\\kernel\\persistence\\smoothsql\\search\\TaoResultSet';
-    
-    public function __construct()
+
+    public function init()
     {
+        parent::init();
+
         $this->connector = ServiceManager::getServiceManager()
                 ->get(common_persistence_Manager::SERVICE_ID)
-                ->getPersistenceById('default');
+                ->getPersistenceById($this->options['persistence'] ?? 'default');
+
+        return $this;
     }
 
         /**
@@ -85,7 +89,7 @@ class GateWay extends TaoSearchGateWay
     {
         return !is_null($this->connector);
     }
-    
+
     /**
      * execute Parsed Query
      *
@@ -104,6 +108,22 @@ class GateWay extends TaoSearchGateWay
     }
 
     /**
+     * @param QueryBuilderInterface $Builder
+     * @param string $propertyUri
+     * @param bool $isDistinct
+     *
+     * @return ResultSetInterface
+     */
+    public function searchTriples(QueryBuilderInterface $Builder, string $propertyUri, bool $isDistinct = false)
+    {
+        $statement = $this->connector->query(parent::searchTriples($Builder, $propertyUri, $isDistinct));
+        $result    = $this->statementToArray($statement);
+        $resultSet = new $this->resultSetClassName($result, count($result));
+        $resultSet->setIsTriple(true);
+        return $resultSet;
+    }
+
+    /**
      *
      * @param Statement $statement
      * @return array
@@ -116,7 +136,7 @@ class GateWay extends TaoSearchGateWay
         }
         return $result;
     }
-    
+
     public function fetchQuery($query)
     {
         $statement = $this->connector->query($query);
@@ -136,8 +156,8 @@ class GateWay extends TaoSearchGateWay
         $result    = $this->statementToArray($statement);
         return (int)reset($result)->cpt;
     }
-    
-        
+
+
     public function getJoiner()
     {
         $joiner = new QueryJoiner();
@@ -146,10 +166,10 @@ class GateWay extends TaoSearchGateWay
         $joiner->setParent($this);
         return $joiner;
     }
-    
+
     public function join(QueryJoiner $joiner)
     {
-        
+
         $query = $joiner->execute();
         $statement = $this->connector->query($query);
         $result    = $this->statementToArray($statement);
@@ -158,15 +178,5 @@ class GateWay extends TaoSearchGateWay
         $queryCount = $joiner->count();
         $resultSet->setParent($this)->setCountQuery($queryCount);
         return $resultSet;
-    }
-
-        /**
-     * return parsed query as string
-     * @return $this
-     */
-    public function printQuery()
-    {
-        echo $this->parsedQuery;
-        return $this;
     }
 }

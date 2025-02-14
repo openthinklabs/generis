@@ -15,9 +15,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
- * Copyright (c) 2002-2008 (original work) Public Research Centre Henri Tudor & University of Luxembourg (under the project TAO & TAO2);
- *               2008-2010 (update and modification) Deutsche Institut für Internationale Pädagogische Forschung (under the project TAO-TRANSFER);
- *               2009-2012 (update and modification) Public Research Centre Henri Tudor (under the project TAO-SUSTAIN & TAO-DEV);
+ * Copyright (c) 2002-2008 (original work) Public Research Centre Henri Tudor & University of Luxembourg
+ *                         (under the project TAO & TAO2);
+ *               2008-2010 (update and modification) Deutsche Institut für Internationale Pädagogische Forschung
+ *                         (under the project TAO-TRANSFER);
+ *               2009-2012 (update and modification) Public Research Centre Henri Tudor
+ *                         (under the project TAO-SUSTAIN & TAO-DEV);
  *               2017-2021 (update and modification) Open Assessment Technologies SA.
  */
 
@@ -181,21 +184,6 @@ class core_kernel_classes_Class extends core_kernel_classes_Resource
     }
 
     /**
-     * Short description of method __construct
-     *
-     * @access public
-     * @author Jerome Bogaerts, <jerome.bogaerts@tudor.lu>
-     * @param string uri
-     * @param string debug
-     * @throws common_exception_Error
-     */
-    public function __construct($uri, $debug = '')
-    {
-        parent::__construct($uri, $debug);
-    }
-
-
-    /**
      * Should not be called by application code, please use
      * core_kernel_classes_ResourceFactory::create() instead
      *
@@ -271,7 +259,7 @@ class core_kernel_classes_Class extends core_kernel_classes_Resource
     {
         $currentClass = $this;
 
-        foreach($labels as $label) {
+        foreach ($labels as $label) {
             $currentClass = $currentClass->retrieveOrCreateSubClassByLabel($label);
         }
 
@@ -354,9 +342,17 @@ class core_kernel_classes_Class extends core_kernel_classes_Resource
      * @param  array options
      * @return \core_kernel_classes_Resource[]
      */
-    public function getInstancesPropertyValues(core_kernel_classes_Property $property, $propertyFilters = [], $options = [])
-    {
-        return (array) $this->getImplementation()->getInstancesPropertyValues($this, $property, $propertyFilters, $options);
+    public function getInstancesPropertyValues(
+        core_kernel_classes_Property $property,
+        $propertyFilters = [],
+        $options = []
+    ) {
+        return (array) $this->getImplementation()->getInstancesPropertyValues(
+            $this,
+            $property,
+            $propertyFilters,
+            $options
+        );
     }
 
     /**
@@ -391,7 +387,9 @@ class core_kernel_classes_Class extends core_kernel_classes_Resource
 
         $additionalTypes = [];
         if (isset($properties[OntologyRdf::RDF_TYPE])) {
-            $types = is_array($properties[OntologyRdf::RDF_TYPE]) ? $properties[OntologyRdf::RDF_TYPE] : [$properties[OntologyRdf::RDF_TYPE]];
+            $types = is_array($properties[OntologyRdf::RDF_TYPE])
+                ? $properties[OntologyRdf::RDF_TYPE]
+                : [$properties[OntologyRdf::RDF_TYPE]];
             foreach ($types as $type) {
                 $uri = is_object($type) ? $type->getUri() : $type;
                 if ($uri != $this->getUri()) {
@@ -415,8 +413,9 @@ class core_kernel_classes_Class extends core_kernel_classes_Resource
      *
      * @access public
      * @author Jerome Bogaerts, <jerome.bogaerts@tudor.lu>
-     * @param  array resources An array of core_kernel_classes_Resource or URIs.
-     * @param  boolean deleteReference If set to true, references about the resources will also be deleted from the database.
+     * @param array $resources An array of core_kernel_classes_Resource or URIs.
+     * @param boolean $deleteReference If set to true, references about the resources will also be deleted from the
+     *                                 database.
      * @return boolean
      */
     public function deleteInstances($resources, $deleteReference = false)
@@ -470,5 +469,10 @@ class core_kernel_classes_Class extends core_kernel_classes_Resource
     private function getClassRepository(): ResourceRepositoryInterface
     {
         return $this->getServiceManager()->getContainer()->get(ClassRepository::class);
+    }
+
+    public function updateUri(string $newUri)
+    {
+        return $this->getImplementation()->updateUri($this, $newUri);
     }
 }

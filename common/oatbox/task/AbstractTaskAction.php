@@ -30,12 +30,12 @@ use oat\oatbox\extension\AbstractAction;
  *
  * @author Aleh Hutnikau <hutnikau@1pt.com>
  *
- * @deprecated since version 7.10.0, to be removed in 8.0. Use \oat\tao\model\taskQueue\Task\FilesystemAwareTrait instead.
+ * @deprecated since version 7.10.0, to be removed in 8.0. Use \oat\tao\model\taskQueue\Task\FilesystemAwareTrait
+ *             instead.
  */
 abstract class AbstractTaskAction extends AbstractAction
 {
-
-    const FILE_DIR = 'taskQueue';
+    public const FILE_DIR = 'taskQueue';
 
     /**
      * Save and serialize file into task queue filesystem.
@@ -56,7 +56,17 @@ abstract class AbstractTaskAction extends AbstractAction
 
         $stream = fopen($path, 'r+');
         $filesystem->writeStream($filename, $stream);
-        fclose($stream);
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        } else {
+            $this->logWarning(
+                sprintf(
+                    'Stream for file "%s" is not valid. It may be already closed',
+                    $name
+                )
+            );
+        }
 
         $file = $dir->getFile($filename);
         return $this->getFileReferenceSerializer()->serialize($file);

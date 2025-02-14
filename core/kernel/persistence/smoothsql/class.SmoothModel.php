@@ -20,13 +20,15 @@
  */
 
 use oat\generis\model\data\ModelManager;
-use oat\oatbox\service\ConfigurableService;
-use oat\generis\model\kernel\persistence\smoothsql\search\ComplexSearchService;
 use oat\generis\model\data\Ontology;
-use oat\generis\persistence\sql\SchemaProviderInterface;
-use oat\generis\persistence\sql\SchemaCollection;
+use oat\generis\model\kernel\persistence\Cacheable;
 use oat\generis\model\kernel\persistence\smoothsql\install\SmoothRdsModel;
+use oat\generis\model\kernel\persistence\smoothsql\search\ComplexSearchService;
+use oat\generis\persistence\sql\SchemaCollection;
+use oat\generis\persistence\sql\SchemaProviderInterface;
+use oat\oatbox\cache\PropertyCache;
 use oat\oatbox\cache\SimpleCache;
+use oat\oatbox\service\ConfigurableService;
 
 /**
  * transitory model for the smooth sql implementation
@@ -34,16 +36,19 @@ use oat\oatbox\cache\SimpleCache;
  * @author joel bout <joel@taotesting.com>
  * @package generis
  */
-class core_kernel_persistence_smoothsql_SmoothModel extends ConfigurableService implements Ontology, SchemaProviderInterface
+class core_kernel_persistence_smoothsql_SmoothModel extends ConfigurableService implements
+    Ontology,
+    SchemaProviderInterface,
+    Cacheable
 {
-    const OPTION_PERSISTENCE = 'persistence';
-    const OPTION_READABLE_MODELS = 'readable';
-    const OPTION_WRITEABLE_MODELS = 'writeable';
-    const OPTION_NEW_TRIPLE_MODEL = 'addTo';
-    const OPTION_SEARCH_SERVICE = 'search';
+    public const OPTION_PERSISTENCE = 'persistence';
+    public const OPTION_READABLE_MODELS = 'readable';
+    public const OPTION_WRITEABLE_MODELS = 'writeable';
+    public const OPTION_NEW_TRIPLE_MODEL = 'addTo';
+    public const OPTION_SEARCH_SERVICE = 'search';
 
-    const DEFAULT_WRITABLE_MODEL = 1;
-    const DEFAULT_READ_ONLY_MODEL = 2;
+    public const DEFAULT_WRITABLE_MODEL = 1;
+    public const DEFAULT_READ_ONLY_MODEL = 2;
 
     /**
      * Persistence to use for the smoothmodel
@@ -52,21 +57,21 @@ class core_kernel_persistence_smoothsql_SmoothModel extends ConfigurableService 
      */
     private $persistence;
 
-    function getResource($uri)
+    public function getResource($uri)
     {
         $resource = new \core_kernel_classes_Resource($uri);
         $resource->setModel($this);
         return $resource;
     }
 
-    function getClass($uri)
+    public function getClass($uri)
     {
         $class = new \core_kernel_classes_Class($uri);
         $class->setModel($this);
         return $class;
     }
 
-    function getProperty($uri)
+    public function getProperty($uri)
     {
         $property = new \core_kernel_classes_Property($uri);
         $property->setModel($this);
@@ -102,7 +107,7 @@ class core_kernel_persistence_smoothsql_SmoothModel extends ConfigurableService 
 
     public function getCache(): SimpleCache
     {
-        return $this->getServiceLocator()->get(SimpleCache::SERVICE_ID);
+        return $this->getServiceLocator()->get(PropertyCache::SERVICE_ID);
     }
 
     /**
@@ -186,7 +191,9 @@ class core_kernel_persistence_smoothsql_SmoothModel extends ConfigurableService 
     {
         $model = ModelManager::getModel();
         if (!$model instanceof self) {
-            throw new common_exception_Error(__FUNCTION__ . ' called on ' . get_class($model) . ' model implementation');
+            throw new common_exception_Error(
+                __FUNCTION__ . ' called on ' . get_class($model) . ' model implementation'
+            );
         }
         return $model->getReadableModels();
     }
@@ -201,7 +208,9 @@ class core_kernel_persistence_smoothsql_SmoothModel extends ConfigurableService 
     {
         $model = ModelManager::getModel();
         if (!$model instanceof self) {
-            throw new common_exception_Error(__FUNCTION__ . ' called on ' . get_class($model) . ' model implementation');
+            throw new common_exception_Error(
+                __FUNCTION__ . ' called on ' . get_class($model) . ' model implementation'
+            );
         }
         return $model->getWritableModels();
     }
@@ -211,5 +220,4 @@ class core_kernel_persistence_smoothsql_SmoothModel extends ConfigurableService 
         $schema = $schemaCollection->getSchema($this->getOption(self::OPTION_PERSISTENCE));
         SmoothRdsModel::addSmoothTables($schema);
     }
-
 }
